@@ -72,11 +72,11 @@ public class Main {
 
     public static JSONObject jsonFromDict(Map<String, CityInfo> cityDict) throws JSONException {
         JSONArray array = new JSONArray();
-        Object[] arr = cityDict.keySet().toArray();
+        String[] keyArray = cityDict.keySet().toArray(new String[0]);
         for (int i = 0; i < cityDict.size(); i++) {
-            array.put(i, new JSONObject().put("City", cityDict.get(arr[i]).name())
-                    .put("Amount", cityDict.get(arr[i]).count())
-                    .put("Percent", cityDict.get(arr[i]).percent()));
+            array.put(i, new JSONObject().put("City", cityDict.get(keyArray[i]).name())
+                    .put("Amount", cityDict.get(keyArray[i]).count())
+                    .put("Percent", cityDict.get(keyArray[i]).percent()));
         }
 
         return new JSONObject().put("Data", array);
