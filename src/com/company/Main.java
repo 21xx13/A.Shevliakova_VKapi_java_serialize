@@ -13,7 +13,8 @@ import java.util.TreeMap;
 /**
  * Отличия от предыдущей домашки: частотный словарь заменен на словарь: ключ - название города,
  * значение - экземпляр класса с информацией о городе (количество проживающих друзей в этом городе и процентное соотношение).
- * Добавлены методы преобразования словаря в файл .json
+ * Добавлены методы преобразования словаря в файл .json.
+ * Реализовано подключение к локальной БД в СУБД MySQL и запись данных из созданного файла.
  */
 
 public class Main {
@@ -78,7 +79,7 @@ public class Main {
 
     public static Connection getConnection() throws SQLException {
         String[] connectData = new String[3];
-        try {
+        try { //чтение паролей, логинов для подключения к БД из отдельного файла, которого по понятным причинам в репозитории нет
             File file = new File("src/database_properties.txt");
             FileReader fr = new FileReader(file);
             BufferedReader reader = new BufferedReader(fr);
