@@ -10,17 +10,11 @@ import java.sql.*;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Отличия от предыдущей домашки: частотный словарь заменен на словарь: ключ - название города,
- * значение - экземпляр класса с информацией о городе (количество проживающих друзей в этом городе и процентное соотношение).
- * Добавлены методы преобразования словаря в файл .json.
- * Реализовано подключение к локальной БД в СУБД MySQL и запись данных из созданного файла.
- */
 
 public class Main {
     public static void main(String[] args) throws IOException, JSONException {
         //получение данных
-        URL url = new URL("https://api.vk.com/method/friends.get?user_id=137795470&fields=city&access_token=6a6f00e00e32891b7922d7c1ccb908a78de2c0f6b2abfe7a66ac9b634338b5b8c02848d4a1fe8f309d553&v=5.126");
+        URL url = new URL("https://api.vk.com/method/friends.get?user_id=85225806&fields=city&access_token=f5493d1ef5493d1ef5493d1e03f53ddc23ff549f5493d1eaae58a467485251565e27d2a&v=5.126");
         URLConnection yc = url.openConnection();
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(
@@ -29,6 +23,8 @@ public class Main {
         in.close();
         //чтение списка друзей и их количества
         JSONObject json = new JSONObject(inputLine);
+
+        System.out.println(json);
         int count = (int) json.getJSONObject("response").get("count");
         JSONArray friends = json.getJSONObject("response").getJSONArray("items");
         //заполнение словаря данными
@@ -38,41 +34,54 @@ public class Main {
 
 
         // ==== Чтение только что созданного файла и запись в БД ====
-        JSONObject dataToDB = readJsonFile();
+        JSONObject dataToDB = readJsonFile("src/data2.json");
+        System.out.println(dataToDB.toString());
         JSONArray arr = (JSONArray) dataToDB.get("Data");  //извлечение массива с городами
-
+        int id = 196901000;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
             Connection conn = getConnection(); // подключение к БД
-            //Statement statement = conn.createStatement();
-            //createTable(statement);  // создание новой таблицы
-            String sqlInsert = "INSERT City(CityName, Percent, CountFriends) VALUES (?, ?, ?)";
+            Statement statement = conn.createStatement();
+            createTable(statement);  // создание новой таблицы
+            String sqlInsert = "INSERT NewTable(CityName, CountFriends, IdUser) VALUES (?, ?, ?)";
             PreparedStatement preparedStatement = conn.prepareStatement(sqlInsert); // шаблон запроса SQL
             // обход массива с данными из файла
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject item = (JSONObject) arr.get(i);
                 //заполнение шаблона
                 preparedStatement.setString(1, item.getString("City"));
-                preparedStatement.setDouble(2, item.getDouble("Percent"));
-                preparedStatement.setInt(3, item.getInt("Amount"));
+                preparedStatement.setInt(2, item.getInt("Amount"));
+                preparedStatement.setInt(3, id);
                 // выполнение запроса
                 preparedStatement.executeUpdate();
             }
+
+            String sqlSelect = "SELECT * FROM City";
+            Statement st = conn.createStatement();
+            ResultSet result = st.executeQuery(sqlSelect);
+            while (result.next()){
+                System.out.println("City " + result.getString("CityName") + " Percent: "
+                        + result.getString("Percent") + " Количество друзей " + result.getString("CountFriends"));
+
+            }
+
+
+
             conn.close();
-        } catch (Exception ignored) {
+        } catch (Exception ignored) { ignored.printStackTrace();
         }
     }
 
-    private static JSONObject readJsonFile() throws IOException, JSONException {
-        try (BufferedReader reader = new BufferedReader(new FileReader("src/data.json"))) {
+    private static JSONObject readJsonFile(String path) throws IOException, JSONException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             return new JSONObject(reader.readLine());
         }
     }
 
 
     private static void createTable(Statement statement) throws SQLException {
-        String sqlCommand = "CREATE TABLE City (Id INT PRIMARY KEY AUTO_INCREMENT, CityName VARCHAR(20), " +
-                "Percent DOUBLE, CountFriends INT)";
+        String sqlCommand = "CREATE TABLE IF NOT EXISTS NewTable (Id INT PRIMARY KEY AUTO_INCREMENT, CityName VARCHAR(255), " +
+                "CountFriends INT, IdUser INT)";
         statement.executeUpdate(sqlCommand);
     }
 
@@ -121,8 +130,8 @@ public class Main {
 
     //создание файла .json
     private static void createJSONFile(String data) throws IOException {
-        Files.createFile(Paths.get("src/data.json"));
-        FileWriter fw = new FileWriter("src/data.json");
+        Files.createFile(Paths.get("src/data2.json"));
+        FileWriter fw = new FileWriter("src/data2.json");
         fw.write(data);
         fw.close();
     }
